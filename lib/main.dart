@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import "package:dart_amqp/dart_amqp.dart";
 import 'package:rich_alert/rich_alert.dart';
 import 'package:vibration/vibration.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 
 void main() => runApp(MyApp());
 
@@ -40,18 +42,19 @@ class MyCustomFormState extends State<MyCustomForm> {
   // not a GlobalKey<MyCustomFormState>.
   final _formKey = GlobalKey<FormState>();
   static ConnectionSettings settings = new ConnectionSettings(
-      host : "YouHostIp",
-      authProvider : new PlainAuthenticator("YourAccount", "YourPassword")
+      host : "You Host",
+      authProvider : new PlainAuthenticator("Your Account", "Your Password")
   );
   final  _client = new Client(settings: settings);
-  String _msg="",_sendmsg="";
+  final flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
+  //String _msg="",_sendmsg="";
 
   @override
   void initState() {
     super.initState();
 
-    sendRabbitMq('test');
     initRabbitMq();
+    initNotification();
   }
 
   @override
@@ -68,19 +71,24 @@ class MyCustomFormState extends State<MyCustomForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          TextFormField(
-            validator: (value) {
-              if (value.isEmpty) {
-                return 'Please enter some text';
-              }
-
-              sendRabbitMq('$value');
-
-              return null;
-            },
-          ),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            //左边添加8像素补白
+            padding: const EdgeInsets.only(left: 8.0,top:0.0,right:8.0,bottom:0.0),
+            child: TextFormField(
+              validator: (value) {
+                if (value.isEmpty) {
+                  return 'Please enter some text';
+                }
+
+                sendRabbitMq('$value');
+
+                return null;
+              },
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0,horizontal: 16.0),
             child: RaisedButton(
               onPressed: () {
                 // Validate returns true if the form is valid, or false
@@ -110,7 +118,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
 
           // Get the payload as a string
-          _msg= " [x] Received string: ${message.payloadAsString}";
+//          _msg= " [x] Received string: ${message.payloadAsString}";
 
           // Or unSerialize to json
           //_msg= " ${consumer.queue.name} Received json: ${message.payloadAsJson}";
@@ -120,17 +128,20 @@ class MyCustomFormState extends State<MyCustomForm> {
 
           // The message object contains helper methods for
           // replying, ack-ing and rejecting
-          Vibration.vibrate(duration: 1000);
-          showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return RichAlertDialog( //uses the custom alert dialog
-                  alertTitle: richTitle("Alert title"),
-                  alertSubtitle: richSubtitle('$_msg'),
-                  alertType: RichAlertType.WARNING,
-                );
-              }
-          );
+//
+//          Vibration.vibrate(duration: 1000);
+//          showDialog(
+//              context: context,
+//              builder: (BuildContext context) {
+//                return RichAlertDialog( //uses the custom alert dialog
+//                  alertTitle: richTitle("Alert title"),
+//                  alertSubtitle: richSubtitle('$_msg'),
+//                  alertType: RichAlertType.WARNING,
+//                );
+//              }
+//          );
+
+          notification("Received : ${message.payloadAsString}");
 
           //message.reply("world");
 
@@ -151,5 +162,46 @@ class MyCustomFormState extends State<MyCustomForm> {
     });
 
   }
+
+  void initNotification(){
+
+    var initializationSettingsAndroid =
+    new AndroidInitializationSettings('ic_launcher');
+    var initializationSettingsIOS = new IOSInitializationSettings();
+    var initializationSettings = new InitializationSettings(
+        initializationSettingsAndroid, initializationSettingsIOS);
+    flutterLocalNotificationsPlugin.initialize(initializationSettings,
+        onSelectNotification: onSelectNotification);
+
+  }
+
+  Future onSelectNotification(String payload) async {
+    showDialog(
+      context: context,
+      builder: (_) {
+        return new AlertDialog(
+          title: Text("PayLoad"),
+          content: Text("Payload : $payload"),
+        );
+      },
+    );
+  }
+
+  Future notification(String msg) async{
+
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        'your channel id', 'your channel name', 'your channel description',
+        importance: Importance.Max, priority: Priority.High, ticker: 'ticker');
+    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var platformChannelSpecifics = NotificationDetails(
+        androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+    await flutterLocalNotificationsPlugin.show(
+        0, 'RabbitMQ',msg, platformChannelSpecifics,
+        payload: 'item x');
+
+  }
+
+
+
 
 }
