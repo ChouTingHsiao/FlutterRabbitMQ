@@ -37,17 +37,18 @@ class MyCustomForm extends StatefulWidget {
 class MyCustomFormState extends State<MyCustomForm> {
   // Create a global key that uniquely identifies the Form widget
   // and allows validation of the form.
-  //
   // Note: This is a GlobalKey<FormState>,
   // not a GlobalKey<MyCustomFormState>.
   final _formKey = GlobalKey<FormState>();
+
   static ConnectionSettings settings = new ConnectionSettings(
       host : "You Host",
       authProvider : new PlainAuthenticator("Your Account", "Your Password")
   );
+
   final  _client = new Client(settings: settings);
+
   final flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
-  //String _msg="",_sendmsg="";
 
   @override
   void initState() {
@@ -72,7 +73,7 @@ class MyCustomFormState extends State<MyCustomForm> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Padding(
-            //左边添加8像素补白
+            //left add 8 pixel
             padding: const EdgeInsets.only(left: 8.0,top:0.0,right:8.0,bottom:0.0),
             child: TextFormField(
               validator: (value) {
@@ -110,45 +111,19 @@ class MyCustomFormState extends State<MyCustomForm> {
 
   void initRabbitMq() {
 
-
     _client.channel()
         .then((Channel channel) => channel.exchange("logs", ExchangeType.FANOUT))
         .then((Exchange exchange) => exchange.bindPrivateQueueConsumer(null))
         .then((Consumer consumer) => consumer.listen((AmqpMessage message) {
 
-
-          // Get the payload as a string
-//          _msg= " [x] Received string: ${message.payloadAsString}";
-
-          // Or unSerialize to json
-          //_msg= " ${consumer.queue.name} Received json: ${message.payloadAsJson}";
-
-          // Or just get the raw data as a uInt8List
-          //_msg= " [x] Received raw: ${message.payload}";
-
-          // The message object contains helper methods for
-          // replying, ack-ing and rejecting
-//
-//          Vibration.vibrate(duration: 1000);
-//          showDialog(
-//              context: context,
-//              builder: (BuildContext context) {
-//                return RichAlertDialog( //uses the custom alert dialog
-//                  alertTitle: richTitle("Alert title"),
-//                  alertSubtitle: richSubtitle('$_msg'),
-//                  alertType: RichAlertType.WARNING,
-//                );
-//              }
-//          );
-
           notification("Received : ${message.payloadAsString}");
 
-          //message.reply("world");
-
     }));
+
   }
 
   void sendRabbitMq(String msg) {
+    
     Client _client2 = new Client(settings: settings);
 
     _client2
@@ -200,8 +175,5 @@ class MyCustomFormState extends State<MyCustomForm> {
         payload: 'item x');
 
   }
-
-
-
 
 }
